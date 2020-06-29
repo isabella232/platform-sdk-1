@@ -37,14 +37,19 @@ std::string get(const char* name, const std::string& default_value) {
 }  // namespace env
 }  // namespace
 
-std::shared_ptr<airmap::boost::Context> airmap::boost::Context::create(const std::shared_ptr<Logger>& logger) {
-  return std::shared_ptr<Context>{new Context{logger}};
+std::shared_ptr<airmap::boost::Context> airmap::boost::Context::create(
+    const std::shared_ptr<Logger>& logger,
+    const std::shared_ptr<Context::Scheduler> schedule_out) {
+  return std::shared_ptr<Context>{new Context{logger, schedule_out}};
 }
 
-airmap::boost::Context::Context(const std::shared_ptr<Logger>& logger)
+airmap::boost::Context::Context(
+    const std::shared_ptr<Logger>& logger,
+    std::shared_ptr<Context::Scheduler> schedule_out)
     : log_{logger},
       io_service_{std::make_shared<::boost::asio::io_service>()},
       keep_alive_{std::make_shared<::boost::asio::io_service::work>(*io_service_)},
+      schedule_out_(schedule_out),
       state_{State::stopped},
       return_code_{Context::ReturnCode::success} {
 }
@@ -130,21 +135,25 @@ void airmap::boost::Context::stop(ReturnCode rc) {
   io_service_->stop();
 }
 
-void airmap::boost::Context::schedule_in(const Microseconds& wait_for, const std::function<void()>& functor) {
-  const ::boost::posix_time::microseconds boost_microseconds(wait_for.total_microseconds());
-  auto timer = std::make_shared<::boost::asio::deadline_timer>(*io_service_);
-  timer->expires_from_now(boost_microseconds);
-  timer->async_wait([this, timer, functor](const auto& error) {
-    if (error) {
-      log_.errorf(component, "error waiting for timer: %s", error.message());
-    } else {
-      functor();
-    }
-  });
+void airmap::boost::Context::schedule_in(const std::function<void()>& task, const Microseconds& wait_for) {
+  if (wait_for.total_microseconds()) {
+    const ::boost::posix_time::microseconds boost_microseconds(wait_for.total_microseconds());
+    auto timer = std::make_shared<::boost::asio::deadline_timer>(*io_service_);
+    timer->expires_from_now(boost_microseconds);
+    timer->async_wait([this, timer, task](const auto& error) {
+      if (error) {
+        log_.errorf(component, "error waiting for timer: %s", error.message());
+      } else {
+        io_service_->post(task);
+      }
+    });
+  } else {
+    io_service_->post(task);
+  }
 }
 
-void airmap::boost::Context::dispatch(const std::function<void()>& task) {
-  io_service_->post(task);
+void airmap::boost::Context::schedule_out(const std::function<void()>& task) {
+
 }
 
 std::shared_ptr<airmap::net::http::Requester> airmap::boost::Context::advisory(
