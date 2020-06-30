@@ -40,6 +40,7 @@ class AIRMAP_EXPORT Context : DoNotCopyOrMove {
 
   class AIRMAP_EXPORT Scheduler {
     public:
+      using shared_ptr = std::shared_ptr<Scheduler>;
       virtual void schedule(const std::function<void()>& task) = 0;
   };
 
@@ -51,10 +52,11 @@ class AIRMAP_EXPORT Context : DoNotCopyOrMove {
   using CreateResult                = Outcome<std::shared_ptr<Context>, Error>;
   using SignalHandler               = std::function<void(int)>;
   using SignalSet                   = std::unordered_set<int>;
+  using shared_ptr                  = std::shared_ptr<Context>;
   /// @endcond
 
   /// create tries to assemble and return a new Context instance.
-  static CreateResult create(const std::shared_ptr<Logger>& logger, const std::shared_ptr<Context::Scheduler> schedule_out = nullptr);
+  static CreateResult create(const std::shared_ptr<Logger>& logger, const Context::Scheduler::shared_ptr& schedule_out = nullptr);
 
   /// create_client_with_configuration schedules creation of a new client with 'configuration'
   /// and reports results to 'cb'.

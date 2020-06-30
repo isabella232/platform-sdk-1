@@ -31,7 +31,7 @@ namespace boost {
 class Context : public airmap::Context, public std::enable_shared_from_this<Context> {
  public:
   static std::shared_ptr<Context> create(const std::shared_ptr<Logger>& logger,
-                                         const std::shared_ptr<Context::Scheduler> schedule_out = nullptr);
+                                         const Context::Scheduler::shared_ptr& = nullptr);
 
   ~Context();
 
@@ -53,8 +53,7 @@ class Context : public airmap::Context, public std::enable_shared_from_this<Cont
 
  private:
   enum class State { stopped, stopping, running };
-  explicit Context(const std::shared_ptr<Logger>& logger,
-                   const std::shared_ptr<Context::Scheduler> schedule_out);
+  explicit Context(const std::shared_ptr<Logger>& logger, const Context::Scheduler::shared_ptr& schedule_out);
 
   std::shared_ptr<net::http::Requester> advisory(const airmap::Client::Configuration& configuration);
   std::shared_ptr<net::http::Requester> aircrafts(const airmap::Client::Configuration& configuration);

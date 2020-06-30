@@ -176,19 +176,20 @@ int main(int argc, char** argv) {
   auto configuration  = airmap::Client::default_production_configuration(credentials);
 
   register_types();
-  auto result = airmap::Context::create(qlogger, std::make_shared<QtMainThreadScheduler>());
+  auto context = airmap::Context::create(qlogger, std::make_shared<QtMainThreadScheduler>());
 
-  if (!result) {
+  if (!context) {
     qCritical("Failed to establish queued signal-slot connections, exiting with error");
     exit(1);
   } else {
-    result.value()->create_client_with_configuration(
+    context.value()->create_client_with_configuration(
       configuration, [configuration](const auto& result) {
         if (result) {
+          auto client = result.value();
           qInfo("Successfully created AirMap client");
           airmap::Authenticator::AuthenticateAnonymously::Params params;
           params.id = "qt client";
-          result.value()->authenticator().authenticate_anonymously(params, [](const auto& result) {
+          client->authenticator().authenticate_anonymously(params, [client](const auto& result) {
             if (result) {
               qInfo("Successfully authenticated with AirMap: %s", result.value().id.c_str());
               QCoreApplication::exit(0);
@@ -209,6 +210,7 @@ int main(int argc, char** argv) {
     qCritical("Failed to establish queued signal-slot connections, exiting with error");
     QCoreApplication::exit(1);
   }
+  auto context_runner = std::thread{[context]() { context.value()->run(); }};
   return app.exec();
 }
 

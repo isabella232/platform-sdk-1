@@ -16,6 +16,6 @@
 
 airmap::Context::CreateResult airmap::Context::create(
     const std::shared_ptr<Logger>& logger,
-    const std::shared_ptr<Context::Scheduler> schedule_out) {
+    const Context::Scheduler::shared_ptr& schedule_out) {
   return CreateResult{boost::Context::create(logger, schedule_out)};
 }
