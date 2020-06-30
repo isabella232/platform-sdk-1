@@ -40,7 +40,7 @@ class AIRMAP_EXPORT Context : DoNotCopyOrMove {
 
   class AIRMAP_EXPORT Scheduler {
     public:
-      virtual void schedule(const std::function<void()>& task) const = 0;
+      virtual void schedule(const std::function<void()>& task) = 0;
   };
 
   /// @cond
