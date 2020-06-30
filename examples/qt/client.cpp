@@ -12,155 +12,23 @@
 // limitations under the License.
 #include "client.h"
 
-#include <airmap/qt/client.h>
 #include <airmap/qt/logger.h>
-#include <airmap/types.h>
+#include <airmap/qt/scheduler.h>
+#include <airmap/qt/types.h>
 
 #include <airmap/authenticator.h>
 
 #include <QCoreApplication>
-#include <QThread>
 
 namespace {
 
 constexpr const char* api_key =
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjcmVkZW50aWFsX2lkIjoiY3JlZGVudGlhbHxMZEV3WG9XU1pueDY5NVN2YXpvOWdmM21nRGJ5IiwiYXBwbGljYXRpb25faWQiOiJhcHBsaWNhdGlvbnxMRzlkcFF5ZjNuQXAwMlRNWHBwWkdGTEtYeGFkIiwib3JnYW5pemF0aW9uX2lkIjoiZGV2ZWxvcGVyfG04NHdLd0pIMk81QVg3aHhCcHB2UUl3ZExZIiwiaWF0IjoxNTkwNzAwMTM2fQ.SC5S_B5EzHQ_P6eS-MFEqjBwvAgTO5bQ_tymOxWtKy4";
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+    "eyJjcmVkZW50aWFsX2lkIjoiY3JlZGVudGlhbHx6MzN6T0dEY21wbjV3NmZHTVdwUFpJblBEd1puIiwiYXBwbGljYXRpb25faWQiOiJhcHBsaWNh"
+    "dGlvbnxwNE4ySnF2aGc3cFpxWVM2dzZ2eFh0Z2czeDV4Iiwib3JnYW5pemF0aW9uX2lkIjoiZGV2ZWxvcGVyfEt5cURrM0p0N2VuUGJLVVk0QU5i"
+    "NUllMEFXbkQiLCJpYXQiOjE1MDg4ODU1NTN9.K3ejcgnoyip3u59ba-VBCivs6tn5gahOsI9FYkCI464";
 }  // namespace
 
-#include <QMetaType>
-
-Q_DECLARE_METATYPE(airmap::Aircraft)
-Q_DECLARE_METATYPE(airmap::Airspace)
-Q_DECLARE_METATYPE(airmap::Credentials)
-Q_DECLARE_METATYPE(airmap::DateTime)
-Q_DECLARE_METATYPE(airmap::Error)
-Q_DECLARE_METATYPE(airmap::FlightPlan)
-Q_DECLARE_METATYPE(airmap::Flight)
-Q_DECLARE_METATYPE(airmap::Geometry)
-Q_DECLARE_METATYPE(airmap::Pilot)
-Q_DECLARE_METATYPE(airmap::Rule)
-Q_DECLARE_METATYPE(airmap::RuleSet)
-Q_DECLARE_METATYPE(airmap::RuleSet::Rule)
-Q_DECLARE_METATYPE(airmap::Status::Advisory)
-Q_DECLARE_METATYPE(airmap::Status::Wind)
-Q_DECLARE_METATYPE(airmap::Status::Weather)
-Q_DECLARE_METATYPE(airmap::Status::Report)
-Q_DECLARE_METATYPE(airmap::Telemetry::Position)
-Q_DECLARE_METATYPE(airmap::Telemetry::Speed)
-Q_DECLARE_METATYPE(airmap::Telemetry::Attitude)
-Q_DECLARE_METATYPE(airmap::Telemetry::Barometer)
-Q_DECLARE_METATYPE(airmap::Optional<airmap::Telemetry::Update>)
-Q_DECLARE_METATYPE(airmap::Token::Type)
-Q_DECLARE_METATYPE(airmap::Token::Anonymous)
-Q_DECLARE_METATYPE(airmap::Token::OAuth)
-Q_DECLARE_METATYPE(airmap::Token::Refreshed)
-Q_DECLARE_METATYPE(airmap::Token)
-Q_DECLARE_METATYPE(airmap::Traffic::Update::Type)
-Q_DECLARE_METATYPE(airmap::Traffic::Update)
-Q_DECLARE_METATYPE(airmap::Version)
-
-void register_types() {
-  qRegisterMetaType<airmap::Aircraft>("Aircraft");
-  qRegisterMetaType<airmap::Airspace>("Airspace");
-  qRegisterMetaType<airmap::Credentials>("Credentials");
-  qRegisterMetaType<airmap::DateTime>("DateTime");
-  qRegisterMetaType<airmap::Error>("Error");
-  qRegisterMetaType<airmap::FlightPlan>("FlightPlan");
-  qRegisterMetaType<airmap::Flight>("Flight");
-  qRegisterMetaType<airmap::Geometry>("Geometry");
-  qRegisterMetaType<airmap::Pilot>("Pilot");
-  qRegisterMetaType<airmap::Rule>("Rule");
-  qRegisterMetaType<airmap::RuleSet>("RuleSet");
-  qRegisterMetaType<airmap::RuleSet::Rule>("RuleSet::Rule");
-  qRegisterMetaType<airmap::Status::Advisory>("Status::Advisory");
-  qRegisterMetaType<airmap::Status::Wind>("Status::Wind");
-  qRegisterMetaType<airmap::Status::Weather>("Status::Weather");
-  qRegisterMetaType<airmap::Status::Report>("Status::Report");
-  qRegisterMetaType<airmap::Telemetry::Position>("Telemetry::Position");
-  qRegisterMetaType<airmap::Telemetry::Speed>("Telemetry::Speed");
-  qRegisterMetaType<airmap::Telemetry::Attitude>("Telemetry::Attitude");
-  qRegisterMetaType<airmap::Telemetry::Barometer>("Telemetry::Barometer");
-  qRegisterMetaType<airmap::Optional<airmap::Telemetry::Update>>("Optional<Telemetry::Update>");
-  qRegisterMetaType<airmap::Token::Type>("Token::Type");
-  qRegisterMetaType<airmap::Token::Anonymous>("Token::Anonymous");
-  qRegisterMetaType<airmap::Token::OAuth>("Token::OAuth");
-  qRegisterMetaType<airmap::Token::Refreshed>("Token::Refreshed");
-  qRegisterMetaType<airmap::Token>("Token");
-  qRegisterMetaType<airmap::Traffic::Update::Type>("Traffic::Update::Type");
-  qRegisterMetaType<airmap::Traffic::Update>("Traffic::Update");
-  qRegisterMetaType<airmap::Version>("Version");
-
-  //TODO: what's the difference beween registering airmap::Aircraft named 'Aircraft' and 'airmap::Aircraft'?
-  qRegisterMetaType<airmap::Aircraft>("airmap::Aircraft");
-  qRegisterMetaType<airmap::Airspace>("airmap::Airspace");
-  qRegisterMetaType<airmap::Credentials>("airmap::Credentials");
-  qRegisterMetaType<airmap::DateTime>("airmap::DateTime");
-  qRegisterMetaType<airmap::Error>("airmap::Error");
-  qRegisterMetaType<airmap::FlightPlan>("airmap::FlightPlan");
-  qRegisterMetaType<airmap::Flight>("airmap::Flight");
-  qRegisterMetaType<airmap::Geometry>("airmap::Geometry");
-  qRegisterMetaType<airmap::Pilot>("airmap::Pilot");
-  qRegisterMetaType<airmap::Rule>("airmap::Rule");
-  qRegisterMetaType<airmap::RuleSet>("airmap::RuleSet");
-  qRegisterMetaType<airmap::RuleSet::Rule>("airmap::RuleSet::Rule");
-  qRegisterMetaType<airmap::Status::Advisory>("airmap::Advisory");
-  qRegisterMetaType<airmap::Status::Wind>("airmap::Wind");
-  qRegisterMetaType<airmap::Status::Weather>("airmap::Weather");
-  qRegisterMetaType<airmap::Status::Report>("airmap::Report");
-  qRegisterMetaType<airmap::Telemetry::Position>("airmap::Telemetry::Position");
-  qRegisterMetaType<airmap::Telemetry::Speed>("airmap::Telemetry::Speed");
-  qRegisterMetaType<airmap::Telemetry::Attitude>("airmap::Telemetry::Attitude");
-  qRegisterMetaType<airmap::Telemetry::Barometer>("airmap::Telemetry::Barometer");
-  qRegisterMetaType<airmap::Optional<airmap::Telemetry::Update>>("airmap::Optional<airmap::Telemetry::Update>");
-  qRegisterMetaType<airmap::Token::Type>("airmap::Token::Type");
-  qRegisterMetaType<airmap::Token::Anonymous>("airmap::Token::Anonymous");
-  qRegisterMetaType<airmap::Token::OAuth>("airmap::Token::OAuth");
-  qRegisterMetaType<airmap::Token::Refreshed>("airmap::Token::Refreshed");
-  qRegisterMetaType<airmap::Token>("airmap::Token");
-  qRegisterMetaType<airmap::Traffic::Update::Type>("airmap::Traffic::Update::Type");
-  qRegisterMetaType<airmap::Traffic::Update>("airmap::Traffic::Update");
-  qRegisterMetaType<airmap::Version>("airmap::Version");
-}
-
-class QtMainThreadScheduler : public QObject,
-                              public airmap::Context::Scheduler,
-                              public std::enable_shared_from_this<QtMainThreadScheduler>
-{
-  struct Event : public QEvent {
-
-      static Type registered_type() {
-        static const Type rt = static_cast<Type>(registerEventType());
-        return rt;
-      }
-
-      explicit Event(const std::function<void()>& task)
-      : QEvent{registered_type()},
-        task_(task)
-      {}
-
-      std::function<void()> task_;
-  };
-
-  public:
-    void schedule(const std::function<void()>& task) override {
-      QCoreApplication::postEvent(this, new Event{[task]() { task(); }});
-    }
-
-    bool event(QEvent* event) {
-      assert(QCoreApplication::instance());
-      assert(QThread::currentThread() == QCoreApplication::instance()->thread());
-
-      if (event->type() == Event::registered_type()) {
-        event->accept();
-
-        if (auto e = dynamic_cast<Event*>(event)) {
-          e->task_();
-        }
-        return true;
-      }
-      return false;
-    }
-};
 
 int main(int argc, char** argv) {
   QCoreApplication app{argc, argv};
@@ -175,8 +43,8 @@ int main(int argc, char** argv) {
   auto dlogger        = std::make_shared<airmap::qt::DispatchingLogger>(qlogger);
   auto configuration  = airmap::Client::default_production_configuration(credentials);
 
-  register_types();
-  auto context = airmap::Context::create(qlogger, std::make_shared<QtMainThreadScheduler>());
+  airmap::qt::register_types();
+  auto context = airmap::Context::create(qlogger, std::make_shared<airmap::qt::QtMainThreadScheduler>());
 
   if (!context) {
     qCritical("Failed to establish queued signal-slot connections, exiting with error");
@@ -194,12 +62,12 @@ int main(int argc, char** argv) {
               qInfo("Successfully authenticated with AirMap: %s", result.value().id.c_str());
               QCoreApplication::exit(0);
             } else {
-              qCritical("Failed to authenticate with AirMap due to: %s", result.error());
+              qCritical("Failed to authenticate with AirMap due to: %s", result.error().message().c_str());
               QCoreApplication::exit(1);
             }
           });
         } else {
-          qCritical("Failed to create AirMap client due to: %s", result.error());
+          qCritical("Failed to create AirMap client due to: %s", result.error().message().c_str());
           QCoreApplication::exit(1);
         }
      });
