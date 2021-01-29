@@ -8,7 +8,7 @@ jobs:
     condition: eq(variables['Build.SourceBranch'], 'refs/heads/master')
     timeoutInMinutes: 0
     pool:
-      vmImage: "ubuntu-16.04"
+      vmImage: "ubuntu-20.04"
     steps:
       - checkout: self
         clean: true
@@ -25,21 +25,11 @@ jobs:
           repository: platform-sdk.ubuntu
           tags: |
             $(Build.SourceVersion)
-      - task: Docker@2
-        displayName: centos
-        inputs:
-          command: buildAndPush
-          Dockerfile: docker/centos
-          buildContext: "."
-          containerRegistry: airmapreg.acr
-          repository: platform-sdk.centos
-          tags: |
-            $(Build.SourceVersion)
   - job: "pr"
     condition: ne(variables['Build.SourceBranch'], 'refs/heads/master')
     timeoutInMinutes: 0
     pool:
-      vmImage: "ubuntu-16.04"
+      vmImage: "ubuntu-20.04"
     steps:
       - checkout: self
         clean: true
@@ -51,12 +41,6 @@ jobs:
         inputs:
           command: build
           Dockerfile: docker/ubuntu
-          buildContext: "."
-      - task: Docker@2
-        displayName: centos
-        inputs:
-          command: build
-          Dockerfile: docker/centos
           buildContext: "."
       - task: Docker@2
         displayName: android
